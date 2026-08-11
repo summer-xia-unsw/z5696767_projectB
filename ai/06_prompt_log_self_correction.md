@@ -4,7 +4,7 @@ Purpose: record the final AI self-correction pass after re-reading the official 
 
 Stage: 06 - Self-correction and requirement audit
 Date: 2026-08-11
-Status: current correction pass completed. Final student-controlled tasks still remain: export `report/report.pdf`, create or push the public GitHub repository, deploy the Streamlit app, and submit the Moodle ZIP plus links.
+Status: current correction pass completed. `report/report.pdf` has been exported and the public GitHub repository has been pushed. Final student-controlled tasks still remain: deploy the Streamlit app, open the public URL in a logged-out browser, and submit the Moodle ZIP plus links.
 
 ## Entry 1 - Re-audit the report against the ProjectB brief
 
@@ -160,11 +160,11 @@ The assistant ran:
 
 ### Risk/Issue
 
-The automated Word visual render could not complete because the local machine does not have LibreOffice/`soffice` installed. This means terminal-based page rendering and PDF export could not be verified here.
+The automated Word visual render could not complete because the local machine does not have LibreOffice/`soffice` installed. This means terminal-based page rendering could not be verified here.
 
 ### Student Decision
 
-Do not claim visual Word QA or `report/report.pdf` export as complete. Leave PDF export as a manual final step in Word.
+Do not claim visual Word QA as complete through the terminal. At this point in the workflow, PDF export was still a manual final step in Word.
 
 ### Verification
 
@@ -180,7 +180,7 @@ Results from this pass:
 
 ### Current Status
 
-The project passes code/app/hand-in mechanical checks. The remaining student actions are manual Word review, PDF export, public GitHub upload, Streamlit deployment, and final submission.
+At this point in the workflow, the project passed code/app/hand-in mechanical checks. Later entries record the manual PDF export and public GitHub upload. The remaining final actions after Entry 6 are Streamlit deployment, logged-out public URL validation, Moodle ZIP upload, and submission of the public GitHub and Streamlit links.
 
 ## Entry 5 - Strengthen innovation and critical reflection after professor-style critique
 
@@ -241,11 +241,51 @@ After editing:
 
 Completed. The next step is to manually inspect the Word layout and export `report/report.pdf`.
 
+## Entry 6 - Push final ProjectB folder to public GitHub repository
+
+### Objective
+
+Upload the completed ProjectB folder to the public GitHub repository required for Part B submission.
+
+### Prompt Summary
+
+The student created an empty public GitHub repository named `z5696767_projectB` and asked the assistant to run the local Git commands needed to upload the project.
+
+### Assistant Output
+
+The assistant initialized an independent Git repository inside `fins2026/z5696767_projectB`, committed the full project folder, connected it to `https://github.com/summer-xia-unsw/z5696767_projectB.git`, and pushed the `main` branch.
+
+The initial pushed commit was:
+
+- `1dae2d5 Initial ProjectB submission`
+
+### Risk/Issue
+
+The main risk was accidentally pushing the parent `fins-agent` repository instead of the standalone ProjectB folder. The assistant checked that `z5696767_projectB` did not already contain its own `.git` folder, initialized the repo inside the ProjectB directory only, and set the remote to the student's new repository.
+
+### Student Decision
+
+Use the GitHub repository as the public Part B code repository and keep `streamlit_app.py` at the repository root for Streamlit deployment.
+
+### Verification
+
+Verification after push:
+
+- GitHub repository URL: `https://github.com/summer-xia-unsw/z5696767_projectB`
+- Visibility: `PUBLIC`
+- Default branch: `main`
+- Remote branch: `origin/main`
+- Required report file found remotely: `report/report.pdf`
+- Required app/data files found remotely: `streamlit_app.py`, `requirements.txt`, `.streamlit/config.toml`, `results/data/fund_returns.csv`, `results/data/fund_weights.csv`, `results/data/sector_sentiment_index.csv`, and `results/tables/performance_metrics.csv`
+- Local `check_handin.py`: 23 checks passed
+
+### Current Status
+
+GitHub upload is complete. The remaining final actions are Streamlit Community Cloud deployment, logged-out public URL validation, Moodle ZIP upload, and submission of the public GitHub and Streamlit links.
+
 ## Remaining Manual Student Actions
 
-- Open `report/report.docx` in Word and export `report/report.pdf`.
-- Create or push the independent `z5696767_projectB` GitHub repository.
-- Make the GitHub repository public at hand-in.
+- Confirm the final GitHub repository remains public: `https://github.com/summer-xia-unsw/z5696767_projectB`.
 - Deploy `streamlit_app.py` on Streamlit Community Cloud.
 - Open the live app URL in a logged-out browser before submission.
 - Submit the Moodle ZIP, public GitHub URL, and live Streamlit URL.
