@@ -31,16 +31,22 @@ results/ - those ARE committed.
 - requirements-dev.txt build/repro-only deps (nltk); keep them out of the deployed app
 - AGENTS.md / CLAUDE.md   replace the stub for your tool (you need just one) with your own
 
+## Final submission links
+
+- GitHub repository: <https://github.com/summer-xia-unsw/z5696767_projectB>
+- Live Streamlit app: <https://novaalloc.streamlit.app>
+- Streamlit entrypoint: `streamlit_app.py`
+- Report PDF: `report/report.pdf`
+
 ## Deploy + hand in
 
-This folder is its own GitHub repo, independent of fins-agent. Your AI agent can run
-the check and push the repo; the browser deploy is yours (it needs your login). See
-PROJECT_BRIEF.md Appendix D and docs/STUDENT_DEPLOY.md (in this folder). In short:
+This folder is its own GitHub repo, independent of fins-agent. See PROJECT_BRIEF.md
+Appendix D and docs/STUDENT_DEPLOY.md (in this folder). In short:
 
     python scripts/check_handin.py        # your agent can run this
     # commit your precomputed app artifacts under results/ (the app reads them)
-    # git init in this folder, then push the contents to a NEW private GitHub repo
+    # commit and push changes to the ProjectB GitHub repo
 
-Then YOU connect the repo on share.streamlit.io (entrypoint streamlit_app.py). At
-hand-in, make the repo PUBLIC, submit the live URL + repo link, and also zip this
-whole folder and upload the zip to Moodle.
+The repo is public for hand-in. The live app is deployed from the GitHub `main`
+branch on Streamlit Community Cloud. Submit the Moodle ZIP, the public GitHub
+link, and the public Streamlit URL.

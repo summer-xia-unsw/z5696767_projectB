@@ -308,3 +308,40 @@ The assistant checked the current folder state:
 ### Current Status
 Deployment is not yet complete. The next required student actions are PDF export, independent GitHub repo creation/push, Streamlit Cloud deployment, public visibility checks, and Moodle submission.
 
+## Entry 12 - Final Moodle ZIP readiness check
+
+### Objective
+Confirm that the final ProjectB folder is ready for Moodle submission and record the exact public links that should accompany the ZIP.
+
+### Prompt Summary
+The student showed the Moodle submission page, which requires a ZIP file named in the format `<zID>_projectB`, and asked whether the project can now be submitted and what needs to be submitted.
+
+### Assistant Output
+The assistant reviewed the current ProjectB submission state after the Streamlit UI update was pushed. It confirmed:
+
+- `report/report.pdf` exists.
+- The GitHub repository is public and pushed to `main`.
+- The live Streamlit app returns HTTP `200`.
+- The hand-in checker returns `23 checks passed`.
+- A Moodle ZIP should be named `z5696767_projectB.zip`.
+
+The assistant added `SUBMISSION_LINKS.md` and updated `README.md` so that the ZIP itself contains the final GitHub and Streamlit URLs.
+
+### Risk/Issue
+The Moodle screenshot shows a file upload box, but it may not show a separate place for links. If links are not entered elsewhere, the marker still needs to find the public GitHub repo and live app URL. Adding `SUBMISSION_LINKS.md` reduces this risk.
+
+### Student Decision
+Submit one ZIP file to Moodle and keep the public links available for any Moodle text/link fields if they appear later in the submission workflow.
+
+### Verification
+Checks performed:
+
+- `scripts/check_handin.py`: `23 checks passed`.
+- GitHub `origin/main` was checked.
+- Live Streamlit URL returned HTTP `200`.
+- The generated ZIP is below the Moodle 200 MB file-size limit.
+- ZIP excludes `.git`, `__pycache__`, `.pytest_cache`, and `.pyc` files.
+
+### Current Status
+Ready for final Moodle upload after the latest ZIP is generated.
+
