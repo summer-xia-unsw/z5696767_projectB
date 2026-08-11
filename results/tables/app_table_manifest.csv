@@ -1,0 +1,7 @@
+stage,required_level,used_by,purpose,canonical_path,exists,rows,columns
+04_app,required,"Overview, Funds, Allocation",Fund metrics and fact-sheet table.,results/tables/performance_metrics.csv,True,12,19
+04_app,optional,Funds,Latest fund holdings for fact sheets.,results/tables/latest_holdings.csv,True,281,9
+04_app,optional,Sentiment,Average sentiment by sector.,results/tables/sector_sentiment_summary.csv,True,10,7
+04_app,optional,Sentiment,News coverage by sector.,results/tables/sentiment_coverage_summary.csv,True,10,8
+04_app,optional,Fusion,Base versus sentiment-tilt metrics.,results/tables/fusion_comparison.csv,True,2,13
+04_app,optional,Fusion,Lag and weight-change diagnostics.,results/tables/fusion_diagnostics.csv,True,1,7

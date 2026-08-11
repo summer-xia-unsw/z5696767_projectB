@@ -1,0 +1,9 @@
+stage,used_by,purpose,canonical_path,exists,rows,columns
+05_report,Data foundation paragraph,Equity return coverage and ticker count.,results/data/equity_returns.csv,True,50250,5
+05_report,Data foundation paragraph,Crypto return coverage after alignment.,results/data/crypto_returns_aligned.csv,True,10060,5
+05_report,Data foundation paragraph,Combined 60-asset return panel.,results/data/combined_returns_panel.csv,True,60310,5
+05_report,Data foundation and sentiment sections,"Headline count, ticker-days and text panel provenance.",results/data/headline_daily_panel.csv,True,37962,6
+05_report,Funds and figures,OOS growth and drawdown figures.,results/data/fund_returns.csv,True,10404,13
+05_report,Weights-over-time figure,Combined fund asset-class weights over time.,results/data/fund_weights.csv,True,17280,14
+05_report,Sentiment section,Sector fear/greed time series and lag columns.,results/data/sector_sentiment_index.csv,True,9832,17
+05_report,Sentiment section,Market fear/greed index figure.,results/data/market_fear_greed_index.csv,True,1006,5

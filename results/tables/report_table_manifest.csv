@@ -1,0 +1,6 @@
+stage,used_by,purpose,canonical_path,exists,rows,columns
+05_report,Table 1 and Table 2,Fund performance and fact-sheet metrics.,results/tables/performance_metrics.csv,True,12,19
+05_report,Table 3,Sector sentiment summary.,results/tables/sector_sentiment_summary.csv,True,10,7
+05_report,Sentiment interpretation,Headline coverage and neutral-share evidence.,results/tables/sentiment_coverage_summary.csv,True,10,8
+05_report,Table 4,Fusion before-vs-after metrics.,results/tables/fusion_comparison.csv,True,2,13
+05_report,Fusion interpretation,Lag violation and tilt diagnostics.,results/tables/fusion_diagnostics.csv,True,1,7

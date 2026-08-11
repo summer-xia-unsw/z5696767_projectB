@@ -1,0 +1,2 @@
+base_fund_id,tilted_fund_id,tilt_strength,weight_sum_max_abs_error,lag_violations,mean_abs_weight_change,max_abs_weight_change
+Equity - Minimum Variance,Equity - Minimum Variance Sentiment Tilt,0.15,1.1102230246251565e-16,0,0.0016573016071453925,0.04901083135535603

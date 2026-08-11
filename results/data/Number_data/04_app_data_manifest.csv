@@ -1,0 +1,6 @@
+stage,required_level,used_by,purpose,canonical_path,exists,rows,columns
+04_app,required,"Funds, Allocation, Overview","Daily OOS fund returns, growth paths and drawdowns used by app charts.",results/data/fund_returns.csv,True,10404,13
+04_app,required,Data Health / future app extension,Monthly live weights; kept as required artifact even if current page mainly uses latest holdings.,results/data/fund_weights.csv,True,17280,14
+04_app,required,Sentiment,Sector fear/greed index and coverage used by sentiment page.,results/data/sector_sentiment_index.csv,True,9832,17
+04_app,optional,Sentiment,Market-level news fear/greed line chart.,results/data/market_fear_greed_index.csv,True,1006,5
+04_app,optional,Fusion,Sentiment-tilt growth and drawdown comparison.,results/data/fusion_fund_returns.csv,True,753,14
