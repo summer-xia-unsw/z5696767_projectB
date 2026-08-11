@@ -1,8 +1,9 @@
-﻿"""NovaAlloc Streamlit dashboard for FINS5545 Project B.
+"""NovaAlloc Streamlit dashboard for FINS5545 Project B.
 
 The app is deliberately light: it reads precomputed CSV artifacts from
 results/ and does not recompute portfolio optimisation or VADER sentiment.
 """
+
 from __future__ import annotations
 
 import pathlib
@@ -137,6 +138,49 @@ PALETTE = {
     "Sentiment Tilt": "#8A5A44",
 }
 
+PAGES = ["Overview", "Funds", "Allocation", "Sentiment", "Fusion", "Method & Data Checks"]
+
+DISPLAY_LABELS = {
+    "artifact": "Artifact",
+    "path": "Source path",
+    "loaded": "Loaded",
+    "rows": "Rows",
+    "columns": "Columns",
+    "fund_id": "Fund",
+    "universe": "Universe",
+    "method_label": "Method",
+    "annualised_return": "Annualised return",
+    "annualised_volatility": "Annualised volatility",
+    "sharpe_ratio": "Sharpe ratio",
+    "max_drawdown": "Max drawdown",
+    "final_growth_of_1": "Final growth of $1",
+    "average_turnover": "Average turnover",
+    "ticker": "Ticker",
+    "sector": "Sector",
+    "asset_class": "Asset class",
+    "weight": "Weight",
+    "dollar_allocation": "Dollar allocation",
+    "observations": "Observations",
+    "mean_score_100": "Mean score (0-100)",
+    "min_score_100": "Minimum score (0-100)",
+    "max_score_100": "Maximum score (0-100)",
+    "mean_ticker_coverage": "Mean ticker coverage",
+    "ticker_days_with_news": "Ticker-days with news",
+    "total_headlines": "Total headlines",
+    "neutral_headline_share": "Neutral headline share",
+    "model": "Model",
+    "delta_annualised_return_vs_base": "Annualised return vs base",
+    "delta_annualised_volatility_vs_base": "Volatility vs base",
+    "delta_max_drawdown_vs_base": "Max drawdown vs base",
+    "delta_sharpe_ratio_vs_base": "Sharpe ratio vs base",
+    "delta_final_growth_of_1_vs_base": "Final growth vs base",
+    "stage": "Stage",
+    "title": "Figure",
+    "png_exists": "PNG ready",
+    "pdf_exists": "PDF ready",
+    "png_path": "PNG path",
+}
+
 st.set_page_config(
     page_title="NovaAlloc | Systematic Funds",
     page_icon="NA",
@@ -199,6 +243,43 @@ st.markdown(
         color: #38484f;
         margin: 0.4rem 0 1rem 0;
     }
+    .journey-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0.85rem;
+        margin: 0.75rem 0 1.2rem 0;
+    }
+    .journey-card {
+        background: #ffffff;
+        border: 1px solid #d9ded7;
+        border-radius: 14px;
+        padding: 0.9rem 0.95rem;
+        min-height: 118px;
+        box-shadow: 0 1px 0 rgba(24, 54, 66, 0.04);
+    }
+    .journey-step {
+        color: #8A5A44;
+        font-size: 0.78rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+    .journey-card h4 {
+        margin: 0.35rem 0 0.35rem 0;
+        color: #183642;
+        font-size: 1.02rem;
+    }
+    .journey-card p {
+        margin: 0;
+        color: #526166;
+        font-size: 0.9rem;
+        line-height: 1.35;
+    }
+    .sidebar-note {
+        color: #526166;
+        font-size: 0.86rem;
+        line-height: 1.35;
+    }
     div[data-testid="stMetric"] {
         background-color: #fbfaf6;
         border: 1px solid #e4dfd2;
@@ -207,9 +288,11 @@ st.markdown(
     }
     @media (max-width: 1200px) {
         .kpi-grid {grid-template-columns: repeat(2, minmax(0, 1fr));}
+        .journey-grid {grid-template-columns: repeat(2, minmax(0, 1fr));}
     }
     @media (max-width: 720px) {
         .kpi-grid {grid-template-columns: 1fr;}
+        .journey-grid {grid-template-columns: 1fr;}
     }
     </style>
     """,
@@ -263,7 +346,9 @@ def money(x: float | int | None) -> str:
     return f"${x:,.0f}"
 
 
-def compact_table(df: pd.DataFrame, percent_cols: list[str] | None = None, number_cols: list[str] | None = None) -> pd.DataFrame:
+def compact_table(
+    df: pd.DataFrame, percent_cols: list[str] | None = None, number_cols: list[str] | None = None
+) -> pd.DataFrame:
     out = df.copy()
     percent_cols = percent_cols or []
     number_cols = number_cols or []
@@ -274,6 +359,67 @@ def compact_table(df: pd.DataFrame, percent_cols: list[str] | None = None, numbe
         if col in out:
             out[col] = out[col].map(lambda v: num(v, 2))
     return out
+
+
+def display_label(column: str) -> str:
+    return DISPLAY_LABELS.get(column, column.replace("_", " ").title())
+
+
+def financial_display(
+    df: pd.DataFrame,
+    percent_cols: list[str] | None = None,
+    number_cols: list[str] | None = None,
+    money_cols: list[str] | None = None,
+    integer_cols: list[str] | None = None,
+) -> tuple[pd.DataFrame, dict[str, object]]:
+    out = df.copy()
+    percent_cols = percent_cols or []
+    number_cols = number_cols or []
+    money_cols = money_cols or []
+    integer_cols = integer_cols or []
+    column_config: dict[str, object] = {}
+
+    for col in percent_cols:
+        if col in out:
+            out[col] = pd.to_numeric(out[col], errors="coerce") * 100
+            label = display_label(col)
+            column_config[label] = st.column_config.NumberColumn(label, format="%.1f%%")
+    for col in number_cols:
+        if col in out:
+            out[col] = pd.to_numeric(out[col], errors="coerce")
+            label = display_label(col)
+            column_config[label] = st.column_config.NumberColumn(label, format="%.2f")
+    for col in money_cols:
+        if col in out:
+            out[col] = pd.to_numeric(out[col], errors="coerce")
+            label = display_label(col)
+            column_config[label] = st.column_config.NumberColumn(label, format="$%.0f")
+    for col in integer_cols:
+        if col in out:
+            out[col] = pd.to_numeric(out[col], errors="coerce")
+            label = display_label(col)
+            column_config[label] = st.column_config.NumberColumn(label, format="%d")
+
+    out = out.rename(columns={col: display_label(col) for col in out.columns})
+    return out, column_config
+
+
+def render_financial_table(
+    df: pd.DataFrame,
+    percent_cols: list[str] | None = None,
+    number_cols: list[str] | None = None,
+    money_cols: list[str] | None = None,
+    integer_cols: list[str] | None = None,
+    hide_index: bool = True,
+) -> None:
+    table, column_config = financial_display(
+        df,
+        percent_cols=percent_cols,
+        number_cols=number_cols,
+        money_cols=money_cols,
+        integer_cols=integer_cols,
+    )
+    st.dataframe(table, width="stretch", hide_index=hide_index, column_config=column_config)
 
 
 def add_download(label: str, df: pd.DataFrame, file_name: str) -> None:
@@ -301,8 +447,12 @@ def report_figure_frame() -> pd.DataFrame:
                 "pdf_path": relpath(pdf_path),
                 "png_exists": png_path.exists(),
                 "pdf_exists": pdf_path.exists(),
-                "png_size_kb": round(png_path.stat().st_size / 1024, 1) if png_path.exists() else np.nan,
-                "pdf_size_kb": round(pdf_path.stat().st_size / 1024, 1) if pdf_path.exists() else np.nan,
+                "png_size_kb": round(png_path.stat().st_size / 1024, 1)
+                if png_path.exists()
+                else np.nan,
+                "pdf_size_kb": round(pdf_path.stat().st_size / 1024, 1)
+                if pdf_path.exists()
+                else np.nan,
             }
         )
     return pd.DataFrame(rows)
@@ -348,7 +498,11 @@ def metric_row(metrics: pd.DataFrame) -> None:
     cards = [
         ("Investable funds", f"{fund_count}", ""),
         ("Best Sharpe ratio", num(best_sharpe["sharpe_ratio"], 2), str(best_sharpe["fund_id"])),
-        ("Best final growth", f"{best_growth['final_growth_of_1']:.2f}x", str(best_growth["fund_id"])),
+        (
+            "Best final growth",
+            f"{best_growth['final_growth_of_1']:.2f}x",
+            str(best_growth["fund_id"]),
+        ),
         ("OOS test window", f"{sample_start} to {sample_end}", "precomputed live sample"),
     ]
     html = ['<div class="kpi-grid">']
@@ -374,7 +528,9 @@ def growth_chart(fund_returns: pd.DataFrame, funds: list[str], title: str) -> go
         title=title,
         labels={"date": "Date", "growth_of_1": "Growth of $1", "fund_id": "Fund"},
     )
-    fig.update_layout(hovermode="x unified", legend_title_text="Fund", margin=dict(l=20, r=20, t=55, b=20))
+    fig.update_layout(
+        hovermode="x unified", legend_title_text="Fund", margin=dict(l=20, r=20, t=55, b=20)
+    )
     return fig
 
 
@@ -389,7 +545,9 @@ def drawdown_chart(fund_returns: pd.DataFrame, funds: list[str], title: str) -> 
         title=title,
         labels={"date": "Date", "drawdown": "Drawdown", "fund_id": "Fund"},
     )
-    fig.update_layout(hovermode="x unified", yaxis_tickformat=".0%", margin=dict(l=20, r=20, t=55, b=20))
+    fig.update_layout(
+        hovermode="x unified", yaxis_tickformat=".0%", margin=dict(l=20, r=20, t=55, b=20)
+    )
     return fig
 
 
@@ -493,10 +651,26 @@ def sentiment_line(sector_sentiment: pd.DataFrame, sectors: list[str], rolling: 
 
 def market_sentiment_chart(market: pd.DataFrame, rolling: int) -> go.Figure:
     data = market.sort_values("date").copy()
-    data["rolling_score"] = data["score_100"].rolling(rolling, min_periods=max(3, rolling // 4)).mean()
+    data["rolling_score"] = (
+        data["score_100"].rolling(rolling, min_periods=max(3, rolling // 4)).mean()
+    )
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=data["date"], y=data["score_100"], name="Daily score", line=dict(color="#c8b89f", width=1)))
-    fig.add_trace(go.Scatter(x=data["date"], y=data["rolling_score"], name=f"{rolling}-day average", line=dict(color="#8A5A44", width=2.5)))
+    fig.add_trace(
+        go.Scatter(
+            x=data["date"],
+            y=data["score_100"],
+            name="Daily score",
+            line=dict(color="#c8b89f", width=1),
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=data["date"],
+            y=data["rolling_score"],
+            name=f"{rolling}-day average",
+            line=dict(color="#8A5A44", width=2.5),
+        )
+    )
     fig.add_hline(y=50, line_dash="dash", line_color="#6f777b", annotation_text="Neutral")
     fig.update_layout(
         title="Market news fear/greed index",
@@ -517,17 +691,77 @@ def show_overview(frames: dict[str, pd.DataFrame]) -> None:
         """
         <div class="nova-hero">
           <h1>NovaAlloc</h1>
-          <p>Systematic multi-asset funds with transparent out-of-sample evidence and news sentiment context.</p>
+          <p>
+            A systematic multi-asset allocation prototype that connects fund performance,
+            portfolio construction, and news sentiment evidence.
+          </p>
         </div>
         """,
         unsafe_allow_html=True,
     )
     metric_row(metrics)
 
+    st.subheader("Start here")
+    st.markdown(
+        """
+        <div class="journey-grid">
+          <div class="journey-card">
+            <div class="journey-step">Step 1</div>
+            <h4>Compare funds</h4>
+            <p>
+              Rank the 12 systematic funds by return, risk, Sharpe ratio,
+              drawdown, and holdings.
+            </p>
+          </div>
+          <div class="journey-card">
+            <div class="journey-step">Step 2</div>
+            <h4>Build allocation</h4>
+            <p>
+              Combine selected funds and inspect the historical value path
+              of a hypothetical portfolio.
+            </p>
+          </div>
+          <div class="journey-card">
+            <div class="journey-step">Step 3</div>
+            <h4>Read sentiment</h4>
+            <p>
+              Use sector and market headline sentiment as context for risk discussion,
+              not as a return guarantee.
+            </p>
+          </div>
+          <div class="journey-card">
+            <div class="journey-step">Step 4</div>
+            <h4>Check evidence</h4>
+            <p>
+              Review whether a lagged sentiment tilt improved the base fund before
+              treating it as product logic.
+            </p>
+          </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    b1, b2, b3, b4 = st.columns(4)
+    if b1.button("Open fund comparison", use_container_width=True):
+        st.session_state["pending_page"] = "Funds"
+        st.rerun()
+    if b2.button("Build allocation", use_container_width=True):
+        st.session_state["pending_page"] = "Allocation"
+        st.rerun()
+    if b3.button("Read sentiment", use_container_width=True):
+        st.session_state["pending_page"] = "Sentiment"
+        st.rerun()
+    if b4.button("Review fusion test", use_container_width=True):
+        st.session_state["pending_page"] = "Fusion"
+        st.rerun()
+
     left, right = st.columns([1.25, 1])
     with left:
         top_funds = metrics.sort_values("sharpe_ratio", ascending=False).head(6)["fund_id"].tolist()
-        st.plotly_chart(growth_chart(fund_returns, top_funds, "Top funds by Sharpe: growth of $1"), width="stretch")
+        st.plotly_chart(
+            growth_chart(fund_returns, top_funds, "Top funds by Sharpe: growth of $1"),
+            width="stretch",
+        )
     with right:
         st.plotly_chart(risk_return_chart(metrics), width="stretch")
 
@@ -535,10 +769,16 @@ def show_overview(frames: dict[str, pd.DataFrame]) -> None:
     c1, c2, c3 = st.columns(3)
     c1.info("Compare funds by return, risk, Sharpe, drawdown, and holdings before choosing a fund.")
     c2.info("Use the allocation lab to combine funds and inspect the combined historical path.")
-    c3.info("Use sentiment analytics as context; the fusion test measures whether a simple sentiment tilt helped.")
+    c3.info(
+        "Use sentiment analytics as context; the fusion test measures whether "
+        "a simple sentiment tilt helped."
+    )
 
     latest_sentiment_date = sector_sentiment["date"].max().date()
-    st.caption(f"Precomputed results loaded from results/. Latest sector sentiment date: {latest_sentiment_date}.")
+    st.caption(
+        f"Latest sector sentiment observation: {latest_sentiment_date}. "
+        "Portfolio results are based on the saved out-of-sample evidence set."
+    )
 
 
 def show_funds(frames: dict[str, pd.DataFrame]) -> None:
@@ -554,7 +794,10 @@ def show_funds(frames: dict[str, pd.DataFrame]) -> None:
     c1, c2 = st.columns(2)
     selected_universes = c1.multiselect("Universe", universes, default=universes)
     selected_methods = c2.multiselect("Method", methods, default=methods)
-    filtered = metrics[metrics["universe"].isin(selected_universes) & metrics["method_label"].isin(selected_methods)].copy()
+    filtered = metrics[
+        metrics["universe"].isin(selected_universes)
+        & metrics["method_label"].isin(selected_methods)
+    ].copy()
 
     if filtered.empty:
         st.warning("No funds match the selected filters.")
@@ -572,25 +815,34 @@ def show_funds(frames: dict[str, pd.DataFrame]) -> None:
         "average_turnover",
     ]
     table = filtered[display_cols].sort_values("sharpe_ratio", ascending=False)
-    st.dataframe(
-        compact_table(
-            table,
-            percent_cols=["annualised_return", "annualised_volatility", "max_drawdown", "average_turnover"],
-            number_cols=["sharpe_ratio", "final_growth_of_1"],
-        ),
-        width="stretch",
-        hide_index=True,
+    render_financial_table(
+        table,
+        percent_cols=[
+            "annualised_return",
+            "annualised_volatility",
+            "max_drawdown",
+            "average_turnover",
+        ],
+        number_cols=["sharpe_ratio", "final_growth_of_1"],
     )
     add_download("Download filtered metrics", table, "novaalloc_filtered_metrics.csv")
 
     selected_funds = filtered["fund_id"].tolist()
-    st.plotly_chart(growth_chart(fund_returns, selected_funds, "Filtered funds: growth of $1"), width="stretch")
-    st.plotly_chart(drawdown_chart(fund_returns, selected_funds, "Filtered funds: drawdown"), width="stretch")
+    st.plotly_chart(
+        growth_chart(fund_returns, selected_funds, "Filtered funds: growth of $1"), width="stretch"
+    )
+    st.plotly_chart(
+        drawdown_chart(fund_returns, selected_funds, "Filtered funds: drawdown"), width="stretch"
+    )
 
     st.subheader("Fund fact sheet")
     default_idx = int(filtered["sharpe_ratio"].idxmax())
     default_fund = metrics.loc[default_idx, "fund_id"]
-    fund_id = st.selectbox("Select a fund", filtered["fund_id"].tolist(), index=filtered["fund_id"].tolist().index(default_fund))
+    fund_id = st.selectbox(
+        "Select a fund",
+        filtered["fund_id"].tolist(),
+        index=filtered["fund_id"].tolist().index(default_fund),
+    )
     fund_metric = metrics[metrics["fund_id"] == fund_id].iloc[0]
     m1, m2, m3, m4, m5 = st.columns(5)
     m1.metric("Annualised return", pct(fund_metric["annualised_return"], 1))
@@ -601,16 +853,22 @@ def show_funds(frames: dict[str, pd.DataFrame]) -> None:
 
     left, right = st.columns([1.1, 0.9])
     with left:
-        st.plotly_chart(growth_chart(fund_returns, [fund_id], f"{fund_id}: growth of $1"), width="stretch")
-        st.plotly_chart(drawdown_chart(fund_returns, [fund_id], f"{fund_id}: drawdown"), width="stretch")
+        st.plotly_chart(
+            growth_chart(fund_returns, [fund_id], f"{fund_id}: growth of $1"), width="stretch"
+        )
+        st.plotly_chart(
+            drawdown_chart(fund_returns, [fund_id], f"{fund_id}: drawdown"), width="stretch"
+        )
     with right:
         if not holdings.empty:
             st.plotly_chart(holdings_chart(holdings, fund_id), width="stretch")
-            latest = holdings[holdings["fund_id"] == fund_id].sort_values("weight", ascending=False).head(12)
-            st.dataframe(
-                compact_table(latest[["ticker", "sector", "asset_class", "weight"]], percent_cols=["weight"]),
-                width="stretch",
-                hide_index=True,
+            latest = (
+                holdings[holdings["fund_id"] == fund_id]
+                .sort_values("weight", ascending=False)
+                .head(12)
+            )
+            render_financial_table(
+                latest[["ticker", "sector", "asset_class", "weight"]], percent_cols=["weight"]
             )
         else:
             st.info("Latest holdings table is not available.")
@@ -621,7 +879,10 @@ def show_allocation(frames: dict[str, pd.DataFrame]) -> None:
     fund_returns = frames["fund_returns"].copy()
 
     st.subheader("Allocation lab")
-    st.caption("Build a hypothetical allocation across NovaAlloc funds using precomputed out-of-sample fund returns.")
+    st.caption(
+        "Build a hypothetical allocation across NovaAlloc funds using "
+        "precomputed out-of-sample fund returns."
+    )
 
     candidate_funds = metrics.sort_values("sharpe_ratio", ascending=False)["fund_id"].tolist()
     default_funds = candidate_funds[:3]
@@ -630,17 +891,44 @@ def show_allocation(frames: dict[str, pd.DataFrame]) -> None:
         st.warning("Select at least one fund.")
         return
 
-    total_capital = st.number_input("Initial investment amount ($)", min_value=1000, max_value=10_000_000, value=100_000, step=5000)
+    if st.button("Reset to equal starting weights", use_container_width=False):
+        for fund in selected:
+            st.session_state[f"alloc_weight_{fund}"] = int(100 / len(selected))
+        st.rerun()
+
     raw_weights = {}
-    st.write("Allocation weights")
-    cols = st.columns(min(3, len(selected)))
-    for i, fund in enumerate(selected):
-        raw_weights[fund] = cols[i % len(cols)].slider(fund, 0, 100, int(100 / len(selected)), 1)
+    with st.form("allocation_form"):
+        total_capital = st.number_input(
+            "Initial investment amount ($)",
+            min_value=1000,
+            max_value=10_000_000,
+            value=100_000,
+            step=5000,
+        )
+        st.write("Allocation weights")
+        cols = st.columns(min(3, len(selected)))
+        for i, fund in enumerate(selected):
+            raw_weights[fund] = cols[i % len(cols)].slider(
+                fund,
+                0,
+                100,
+                int(100 / len(selected)),
+                1,
+                key=f"alloc_weight_{fund}",
+            )
+        submitted = st.form_submit_button("Apply allocation", use_container_width=True)
 
     total_weight = sum(raw_weights.values())
     if total_weight <= 0:
         st.warning("Total allocation weight must be greater than zero.")
         return
+    if submitted:
+        st.success("Allocation applied.")
+    if total_weight != 100:
+        st.info(
+            f"Input weights total {total_weight}%. NovaAlloc normalises them "
+            "to 100% for the portfolio test."
+        )
     weights = {fund: value / total_weight for fund, value in raw_weights.items()}
 
     allocation = allocation_series(fund_returns, weights)
@@ -667,14 +955,16 @@ def show_allocation(frames: dict[str, pd.DataFrame]) -> None:
     st.plotly_chart(fig, width="stretch")
 
     weight_table = pd.DataFrame(
-        {"fund_id": list(weights.keys()), "weight": list(weights.values()), "dollar_allocation": [w * total_capital for w in weights.values()]}
+        {
+            "fund_id": list(weights.keys()),
+            "weight": list(weights.values()),
+            "dollar_allocation": [w * total_capital for w in weights.values()],
+        }
     )
-    st.dataframe(
-        compact_table(weight_table, percent_cols=["weight"]).assign(
-            dollar_allocation=weight_table["dollar_allocation"].map(lambda v: money(v))
-        ),
-        width="stretch",
-        hide_index=True,
+    render_financial_table(
+        weight_table,
+        percent_cols=["weight"],
+        money_cols=["dollar_allocation"],
     )
     add_download("Download allocation path", allocation, "novaalloc_allocation_path.csv")
 
@@ -686,7 +976,10 @@ def show_sentiment(frames: dict[str, pd.DataFrame]) -> None:
     coverage = frames["sentiment_coverage"].copy()
 
     st.subheader("News sentiment analytics")
-    st.caption("Sentiment is based on precomputed headline scores. It is context, not a guarantee of future return.")
+    st.caption(
+        "Historical headline sentiment is used as market context. "
+        "It is not a guarantee of future return."
+    )
 
     latest = sector_sentiment.sort_values("date").groupby("sector", as_index=False).tail(1)
     latest_date = sector_sentiment["date"].max().date()
@@ -712,27 +1005,38 @@ def show_sentiment(frames: dict[str, pd.DataFrame]) -> None:
         if not sector_summary.empty:
             st.write("Average sector sentiment")
             show = sector_summary.sort_values("mean_score_100", ascending=False)
-            st.dataframe(
-                compact_table(
-                    show[["sector", "observations", "mean_score_100", "min_score_100", "max_score_100", "mean_ticker_coverage"]],
-                    percent_cols=["mean_ticker_coverage"],
-                    number_cols=["mean_score_100", "min_score_100", "max_score_100"],
-                ),
-                width="stretch",
-                hide_index=True,
+            render_financial_table(
+                show[
+                    [
+                        "sector",
+                        "observations",
+                        "mean_score_100",
+                        "min_score_100",
+                        "max_score_100",
+                        "mean_ticker_coverage",
+                    ]
+                ],
+                percent_cols=["mean_ticker_coverage"],
+                number_cols=["mean_score_100", "min_score_100", "max_score_100"],
+                integer_cols=["observations"],
             )
     with c2:
         if not coverage.empty:
             st.write("News coverage by sector")
             show = coverage.sort_values("total_headlines", ascending=False)
-            st.dataframe(
-                compact_table(
-                    show[["sector", "ticker_days_with_news", "total_headlines", "mean_score_100", "neutral_headline_share"]],
-                    percent_cols=["neutral_headline_share"],
-                    number_cols=["mean_score_100"],
-                ),
-                width="stretch",
-                hide_index=True,
+            render_financial_table(
+                show[
+                    [
+                        "sector",
+                        "ticker_days_with_news",
+                        "total_headlines",
+                        "mean_score_100",
+                        "neutral_headline_share",
+                    ]
+                ],
+                percent_cols=["neutral_headline_share"],
+                number_cols=["mean_score_100"],
+                integer_cols=["ticker_days_with_news", "total_headlines"],
             )
 
 
@@ -743,53 +1047,70 @@ def show_fusion(frames: dict[str, pd.DataFrame]) -> None:
     diagnostics = frames["fusion_diagnostics"].copy()
 
     st.subheader("Fusion check: base fund versus sentiment tilt")
-    st.caption("The sentiment signal is lagged before trading. A negative result is still informative for product design.")
+    st.caption(
+        "The sentiment signal is lagged before trading. "
+        "A negative result is still informative for product design."
+    )
 
     if comparison.empty or fusion_returns.empty:
         st.info("Fusion outputs are not available.")
         return
 
     display = comparison.copy()
-    st.dataframe(
-        compact_table(
-            display,
-            percent_cols=[
-                "annualised_return",
-                "annualised_volatility",
-                "max_drawdown",
-                "delta_annualised_return_vs_base",
-                "delta_annualised_volatility_vs_base",
-                "delta_max_drawdown_vs_base",
-            ],
-            number_cols=["sharpe_ratio", "final_growth_of_1", "delta_sharpe_ratio_vs_base", "delta_final_growth_of_1_vs_base"],
-        ),
-        width="stretch",
-        hide_index=True,
+    render_financial_table(
+        display,
+        percent_cols=[
+            "annualised_return",
+            "annualised_volatility",
+            "max_drawdown",
+            "delta_annualised_return_vs_base",
+            "delta_annualised_volatility_vs_base",
+            "delta_max_drawdown_vs_base",
+        ],
+        number_cols=[
+            "sharpe_ratio",
+            "final_growth_of_1",
+            "delta_sharpe_ratio_vs_base",
+            "delta_final_growth_of_1_vs_base",
+        ],
     )
 
     base_id = comparison.loc[comparison["model"] == "Base", "fund_id"].iloc[0]
     tilted_id = comparison.loc[comparison["model"] != "Base", "fund_id"].iloc[0]
-    base = fund_returns[fund_returns["fund_id"] == base_id][["date", "fund_id", "growth_of_1", "drawdown"]]
+    base = fund_returns[fund_returns["fund_id"] == base_id][
+        ["date", "fund_id", "growth_of_1", "drawdown"]
+    ]
     tilted = fusion_returns[["date", "fund_id", "growth_of_1", "drawdown"]]
     combined = pd.concat([base, tilted], ignore_index=True)
 
     left, right = st.columns(2)
     with left:
-        st.plotly_chart(growth_chart(combined, [base_id, tilted_id], "Base vs sentiment tilt: growth of $1"), width="stretch")
+        st.plotly_chart(
+            growth_chart(combined, [base_id, tilted_id], "Base vs sentiment tilt: growth of $1"),
+            width="stretch",
+        )
     with right:
-        st.plotly_chart(drawdown_chart(combined, [base_id, tilted_id], "Base vs sentiment tilt: drawdown"), width="stretch")
+        st.plotly_chart(
+            drawdown_chart(combined, [base_id, tilted_id], "Base vs sentiment tilt: drawdown"),
+            width="stretch",
+        )
 
     if not diagnostics.empty:
         st.write("Fusion diagnostics")
-        st.dataframe(diagnostics, width="stretch", hide_index=True)
+        render_financial_table(diagnostics, integer_cols=["lag_violations"])
         lag = int(diagnostics["lag_violations"].iloc[0]) if "lag_violations" in diagnostics else 0
-        st.success(f"Lag check: {lag} violation(s). The signal is designed to use prior sentiment only.")
+        if lag == 0:
+            st.success("Timing check passed: the tilt uses prior sentiment only.")
+        else:
+            st.warning(f"Timing check needs review: {lag} lag issue(s) detected.")
 
     base_sharpe = comparison.loc[comparison["model"] == "Base", "sharpe_ratio"].iloc[0]
     tilt_sharpe = comparison.loc[comparison["model"] != "Base", "sharpe_ratio"].iloc[0]
     if tilt_sharpe < base_sharpe:
         st.warning(
-            "The sentiment tilt reduced Sharpe in this sample. That does not invalidate the sentiment index; it shows that this simple tilt rule needs refinement before being marketed as return-enhancing."
+            "The sentiment tilt reduced Sharpe in this sample. That does not invalidate "
+            "the sentiment index; it shows that this simple tilt rule needs refinement "
+            "before being marketed as return-enhancing."
         )
     else:
         st.success("The sentiment tilt improved Sharpe in this sample.")
@@ -804,16 +1125,12 @@ def show_report_figure_audit() -> None:
     else:
         st.warning("Some redesigned figure files are missing. Check the manifest below.")
 
-    st.dataframe(
-        figures[["stage", "title", "png_exists", "pdf_exists", "png_path"]],
-        width="stretch",
-        hide_index=True,
-    )
+    render_financial_table(figures[["stage", "title", "png_exists", "pdf_exists", "png_path"]])
 
     preview = st.selectbox(
         "Optional preview",
-        ["No preview"] + figures["title"].tolist(),
-        help="Use this only when checking that the Word report figure files still exist.",
+        ["No preview", *figures["title"].tolist()],
+        help="Use this only when checking that the written report figure exports still exist.",
     )
     if preview != "No preview":
         figure = figures[figures["title"] == preview].iloc[0]
@@ -821,7 +1138,11 @@ def show_report_figure_audit() -> None:
 
 
 def show_data_health(frames: dict[str, pd.DataFrame]) -> None:
-    st.subheader("Data health and reproducibility")
+    st.subheader("Method and data checks")
+    st.caption(
+        "This page is mainly for markers and reproducibility review. "
+        "It confirms which saved evidence files power the live dashboard."
+    )
     rows = []
     for key, path in {**REQUIRED_FILES, **OPTIONAL_FILES}.items():
         frame = frames.get(key, pd.DataFrame())
@@ -834,16 +1155,18 @@ def show_data_health(frames: dict[str, pd.DataFrame]) -> None:
                 "columns": len(frame.columns) if not frame.empty else 0,
             }
         )
-    st.dataframe(pd.DataFrame(rows), width="stretch", hide_index=True)
-    with st.expander("Report figure files - audit only", expanded=False):
+    render_financial_table(pd.DataFrame(rows), integer_cols=["rows", "columns"])
+    with st.expander("Written report figure exports", expanded=False):
         st.caption(
-            "These PNG/PDF files are static visuals used by the Word report. "
-            "They are kept here for reproducibility checks, not as a primary investor workflow page."
+            "These PNG/PDF files are static visuals used by the written report. "
+            "They are kept here for reproducibility checks, not as a primary "
+            "investor workflow page."
         )
         show_report_figure_audit()
     st.info(
-        "Runtime rule: the dashboard reads CSV files from results/. Heavy model building stays in scripts/run_part_b.py. "
-        "Report figure files are checked here as static evidence for the written report."
+        "The deployed dashboard is intentionally lightweight: it reads saved evidence "
+        "files and does not rerun portfolio backtests or sentiment scoring during "
+        "a user session."
     )
 
 
@@ -854,19 +1177,24 @@ def main() -> None:
         st.error(str(exc))
         st.stop()
 
+    if "pending_page" in st.session_state:
+        st.session_state["page"] = st.session_state.pop("pending_page")
+    if "page" not in st.session_state:
+        st.session_state["page"] = "Overview"
+
     st.sidebar.title("NovaAlloc")
-    st.sidebar.caption("Systematic funds and news sentiment analytics")
-    st.sidebar.markdown("**Results source:** precomputed CSV artifacts")
-    st.sidebar.markdown("**Model work:** completed before launch")
-    st.sidebar.markdown("**Deployment:** final step after report review")
+    st.sidebar.caption("Systematic funds and news sentiment evidence")
+    st.sidebar.markdown("**Data:** validated 2020-2023 fund and news dataset")
+    st.sidebar.markdown("**Evidence:** walk-forward out-of-sample tests")
+    st.sidebar.markdown("**Status:** live academic prototype")
     st.sidebar.divider()
     page = st.sidebar.radio(
         "Navigation",
-        ["Overview", "Funds", "Allocation", "Sentiment", "Fusion", "Data Health"],
+        PAGES,
         index=0,
+        key="page",
     )
 
-    st.caption(f"Current view: {page}")
     if page == "Overview":
         show_overview(frames)
     elif page == "Funds":
@@ -877,10 +1205,9 @@ def main() -> None:
         show_sentiment(frames)
     elif page == "Fusion":
         show_fusion(frames)
-    elif page == "Data Health":
+    elif page == "Method & Data Checks":
         show_data_health(frames)
 
 
 if __name__ == "__main__":
     main()
-

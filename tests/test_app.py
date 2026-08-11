@@ -3,6 +3,7 @@
 The app should load precomputed results and render the full investor journey
 without recomputing models at runtime.
 """
+
 from pathlib import Path
 
 from streamlit.testing.v1 import AppTest
@@ -29,7 +30,7 @@ def test_streamlit_app_renders():
 
 
 def test_streamlit_app_navigation_pages_render():
-    pages = ["Funds", "Allocation", "Sentiment", "Fusion", "Data Health"]
+    pages = ["Funds", "Allocation", "Sentiment", "Fusion", "Method & Data Checks"]
     at = AppTest.from_file("streamlit_app.py", default_timeout=30)
     at.run()
 
